@@ -1,0 +1,106 @@
+{
+    "app1": {
+        "name": "Maya 2014",
+        "proc_names": ["maya.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\Documents\\maya" ],
+        	"Ex-Machina" 	: [ "C:\\Users\\Murphy\\Documents\\maya" ],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\Documents\\maya" ]
+        }
+    },
+    "app2": {
+        "name": "Adobe Photoshop CC 2014",
+        "proc_names": ["Photoshop.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Adobe\\Adobe Photoshop CC 2014\\Adobe Photoshop CC 2014 Settings" ],
+        	"Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Adobe\\Adobe Photoshop CC 2014\\Adobe Photoshop CC 2014 Settings" 			],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Adobe\\Adobe Photoshop CC 2014\\Adobe Photoshop CC 2014 Settings" 			]
+        }
+    },
+    "app3": {
+        "name": "AStyle Extension",
+        "proc_names" 		: ["devenv.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ ],
+        	"Ex-Machina" 	: [ ],
+            "28NHL" 		: [ ]
+        }
+    },
+    "app4": {
+        "name": "Blender",
+        "proc_names" 		: ["blender.exe", "blender-app.exe"],
+        "paths": {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Blender Foundation\\Blender\\2.73",
+                				"C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Blender Foundation\\Blender\\2.74",
+                				"C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Blender Foundation\\Blender\\2.75",
+                				"C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Blender Foundation\\Blender\\2.76",
+                				"C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Blender Foundation\\Blender\\2.77"
+            ],
+            "Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.73",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.74",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.75",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.76",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.77"
+            ],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.73",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.74",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.75",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.76",
+								"C:\\Users\\Murphy\\AppData\\Roaming\\Blender Foundation\\Blender\\2.77"
+            ]
+        }
+    },
+    "app5": {
+        "name": "SketchUp 2015",
+        "proc_names" 		: ["SketchUp.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\SketchUp\\SketchUp 2015\\SketchUp" 	],
+        	"Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\SketchUp\\SketchUp 2015\\SketchUp" 				],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\SketchUp\\SketchUp 2015\\SketchUp" 				]
+        }
+    },
+    "app6": {
+        "name": "Inkscape",
+        "proc_names" 		: ["inkscape.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\inkscape" 	],
+        	"Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\inkscape" 				],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\inkscape" 				]
+        }
+    },
+    "app7": {
+        "name": "Krita",
+        "proc_names": ["krita.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\krita\\share\\apps\\krita" 	],
+        	"Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\krita\\share\\apps\\krita" 				],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\krita\\share\\apps\\krita" 				]
+        }
+    },
+    "app8": {
+        "name": "CINEMA 4D R16",
+        "proc_names": ["CINEMA 4D.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\MAXON\\CINEMA 4D R16_14AF56B1" 	],
+            "Ex-Machina" 	: [ ],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\MAXON\\CINEMA 4D R16_14AF56B1" 				]
+        }
+    },
+    "app9": {
+        "name": "MODO 801_SP2",
+        "proc_names": ["modo.exe"],
+        "paths":
+        {
+        	"kapukw" 		: [ "C:\\Users\\igor_frolov.TARGEM\\AppData\\Roaming\\Luxology" ],
+            "Ex-Machina" 	: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Luxology" 			],
+            "28NHL" 		: [ "C:\\Users\\Murphy\\AppData\\Roaming\\Luxology" 			]
+        }
+    }
+}
