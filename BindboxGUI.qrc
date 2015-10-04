@@ -1,12 +1,12 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
-   <file>resources/icon16.png</file>
-   <file>resources/error.png</file>
-   <file>resources/success.png</file>
-   <file>resources/options.png</file>
-   <file>resources/message_bg.png</file>
-   <file>resources/to_cloud.png</file>
-   <file>resources/to_host.png</file>
-   <file>resources/Eurostile.ttf</file>
+	<file>resources/appinfo_bg.png</file>
+	<file>resources/error.png</file>
+	<file>resources/icon16.png</file>
+	<file>resources/options.png</file>
+	<file>resources/success.png</file>
+	<file>resources/to_cloud.png</file>
+	<file>resources/to_host.png</file>
+	<file>resources/Eurostile.ttf</file>
 </qresource>
 </RCC>

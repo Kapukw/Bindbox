@@ -46,7 +46,6 @@ class TimestampWidget(QtGui.QWidget):
 
 
 class AppInfoWidget(QtGui.QWidget):
-    bgPix = None
     toHostPix = None
     toCloudPix = None
 
@@ -73,16 +72,16 @@ class AppInfoWidget(QtGui.QWidget):
         layout.setContentsMargins(15, 0, 20, 0)
         layout.setSpacing(0)
         
-        bgWidget = QtGui.QWidget()
-        bgWidget.setObjectName("bgWidget")
-        bgWidget.setFixedSize(320, 38)
-        bgWidget.setLayout(layout)
+        backgroundWidget = QtGui.QWidget()
+        backgroundWidget.setObjectName("backgroundWidget")
+        backgroundWidget.setFixedSize(320, 38)
+        backgroundWidget.setLayout(layout)
 
-        bgLayout = QtGui.QHBoxLayout()
-        bgLayout.addWidget(bgWidget)
-        bgLayout.setAlignment(QtCore.Qt.AlignLeft)
-        bgLayout.setContentsMargins(28, 0, 0, 0)
-        self.setLayout(bgLayout)
+        backgroundLayout = QtGui.QHBoxLayout()
+        backgroundLayout.addWidget(backgroundWidget)
+        backgroundLayout.setAlignment(QtCore.Qt.AlignLeft)
+        backgroundLayout.setContentsMargins(28, 0, 0, 0)
+        self.setLayout(backgroundLayout)
 
 
 class AppWindow(QtGui.QWidget):
@@ -93,8 +92,8 @@ class AppWindow(QtGui.QWidget):
             QWidget#lineWidget {
                 background-color: #575757;
             }
-            QWidget#bgWidget {
-                background-image: url(./resources/message_bg.png);
+            QWidget#backgroundWidget {
+                background-image: url(:/resources/appinfo_bg.png);
                 background-position: center left;
                 background-repeat: no-repeat;
             }
@@ -206,7 +205,6 @@ class AppWindow(QtGui.QWidget):
         TimestampWidget.errorPix = QtGui.QPixmap(":/resources/error.png")
         TimestampWidget.successPix = QtGui.QPixmap(":/resources/success.png")
 
-        AppInfoWidget.bgPix = QtGui.QPixmap(":/resources/message_bg.png")
         AppInfoWidget.toHostPix = QtGui.QPixmap(":/resources/to_host.png")
         AppInfoWidget.toCloudPix = QtGui.QPixmap(":/resources/to_cloud.png")
 
