@@ -39,6 +39,19 @@ def get_tree_mtime(top):
         if new_mtime > mtime: mtime = new_mtime
     return mtime
 
+def copystat_recursive(src, dst):
+
+    if S_ISDIR(os.stat(src).st_mode):
+        src_entries = os.listdir(src)
+        dst_entries = os.listdir(dst)
+        count = len(src_entries)
+
+        for i in xrange(0, count):
+            copystat_recursive(os.path.join(src, src_entries[i]), os.path.join(dst, dst_entries[i]))
+
+    shutil.copystat(src, dst)
+
+
 def replace(file_path, pattern, subst):
     old_mtime = os.stat(file_path).st_mtime
     fh, abs_path = mkstemp()
@@ -79,8 +92,8 @@ def preprocess(src_dir, dst_dir, preprocess_dict, from_local, native):
 
             print("replace " + dst_path + " " + pattern + " " + subst)
             replace(dst_path, pattern, subst)
-            shutil.copystat(src_path, dst_path)
-    shutil.copystat(src_dir, dst_dir)
+
+    copystat_recursive(src_dir, dst_dir)
 
 class AppSyncResult:
     SYNCED = 0
