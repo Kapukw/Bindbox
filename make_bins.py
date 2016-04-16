@@ -17,5 +17,4 @@ setup(name='Bindbox',
       version='0.1.0',
       description='Bindbox Sync App',
       options=options,
-      executables=executables
-      )
+      executables=executables)

@@ -1,4 +1,7 @@
-﻿import sys, datetime, traceback, types
+﻿import sys
+import datetime
+import traceback
+import types
 from functools import wraps
 from PyQt4 import QtCore, QtGui
 
@@ -19,11 +22,12 @@ def str_datetime(t):
 
 
 def PyQtSlotWithExceptions(*args):
-    if len(args) == 0 or isinstance(args[0], types.FunctionType): args = []
+    if len(args) == 0 or isinstance(args[0], types.FunctionType):
+        args = []
     @QtCore.pyqtSlot(*args)
     def slotdecorator(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args):
             try:
                 func(*args)
             except:
@@ -37,13 +41,18 @@ def win32gui_hook():
         sys.stdout.write("\n")
         sys.stdout.flush()
     except IOError:
-        class dummyStream:
+        class dummyStream(object):
             ''' dummyStream behaves like a stream but does nothing. '''
-            def __init__(self): pass
-            def write(self,data): pass
-            def read(self,data): pass
-            def flush(self): pass
-            def close(self): pass
+            def __init__(self):
+                pass
+            def write(self, data):
+                pass
+            def read(self, data):
+                pass
+            def flush(self):
+                pass
+            def close(self):
+                pass
         sys.stdout = dummyStream()
         sys.stderr = dummyStream()
         sys.stdin = dummyStream()

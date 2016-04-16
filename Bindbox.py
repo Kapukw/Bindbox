@@ -1,42 +1,52 @@
-﻿import os, socket, shutil, time, json
+﻿import os
+import socket
+import shutil
+import time
+import json
 from tempfile import mkstemp
-from stat import *
+from stat import S_ISDIR, S_ISREG
 
 import psutil
 
 # user config
-g_cloud_dir = os.path.normcase("Dropbox/Bindbox/")
-g_paths_file = "paths.json"
+CLOUD_DIR = os.path.normcase("Dropbox/Bindbox/")
+PATHS_FILE = "paths.json"
 
 def get_host_name():
     return socket.gethostname()
 
 def get_config_path():
-    path = os.path.join(os.path.expanduser("~"), g_cloud_dir, g_paths_file)
+    path = os.path.join(os.path.expanduser("~"), CLOUD_DIR, PATHS_FILE)
     return path
 
 def get_cloud_path():
-    path = os.path.join(os.path.expanduser("~"), g_cloud_dir)
+    path = os.path.join(os.path.expanduser("~"), CLOUD_DIR)
     return path
 
 def list_processes():
     proc_names = list()
     for proc in psutil.process_iter():
-        try: proc_name = proc.name()
-        except psutil.NoSuchProcess: pass
-        else: proc_names.append(proc_name)
+        try:
+            proc_name = proc.name()
+        except psutil.NoSuchProcess:
+            pass
+        else:
+            proc_names.append(proc_name)
     return proc_names
 
 def get_tree_mtime(top):
     mtime = os.stat(top).st_mtime
     new_mtime = mtime
-    for f in os.listdir(top):
-        path = os.path.join(top, f)
+    for child in os.listdir(top):
+        path = os.path.join(top, child)
         mode = os.stat(path).st_mode
-        if S_ISDIR(mode): new_mtime = get_tree_mtime(path)
-        elif S_ISREG(mode): new_mtime = os.stat(path).st_mtime
+        if S_ISDIR(mode):
+            new_mtime = get_tree_mtime(path)
+        elif S_ISREG(mode):
+            new_mtime = os.stat(path).st_mtime
         else: print 'Skipping %s' % path
-        if new_mtime > mtime: mtime = new_mtime
+        if new_mtime > mtime:
+            mtime = new_mtime
     return mtime
 
 def copystat_recursive(src, dst):
@@ -53,18 +63,17 @@ def copystat_recursive(src, dst):
 
 
 def replace(file_path, pattern, subst):
-    old_mtime = os.stat(file_path).st_mtime
-    fh, abs_path = mkstemp()
-    with open(abs_path,'w') as new_file:
+    file_handle, abs_path = mkstemp()
+    with open(abs_path, 'w') as new_file:
         with open(file_path) as old_file:
             for line in old_file:
                 new_file.write(line.replace(pattern, subst))
-    os.close(fh)
+    os.close(file_handle)
     os.remove(file_path)
     shutil.move(abs_path, file_path)
 
 def preprocess(src_dir, dst_dir, preprocess_dict, from_local, native):
-    if preprocess_dict == None:
+    if preprocess_dict is None:
         return
     for var_name, file_names in preprocess_dict.iteritems():
         for file_name in file_names:
@@ -95,12 +104,12 @@ def preprocess(src_dir, dst_dir, preprocess_dict, from_local, native):
 
     copystat_recursive(src_dir, dst_dir)
 
-class AppSyncResult:
+class AppSyncResult(object):
     SYNCED = 0
     CLOUD_TO_HOST = 1
     HOST_TO_CLOUD = 2
 
-class AppData:
+class AppData(object):
     def __init__(self, json_dict):
         self.name = json_dict['name']
         self.proc_names = json_dict['proc_names'] if 'proc_names' in json_dict else None
@@ -144,7 +153,7 @@ class AppData:
                         shutil.copytree(host_path, cloud_path)
                         result = AppSyncResult.HOST_TO_CLOUD
                         result_str = "host -> cloud"
-                    
+
                     elif hp_mtime < cp_mtime:
                         shutil.rmtree(host_path)
                         shutil.copytree(cloud_path, host_path)
@@ -154,7 +163,7 @@ class AppData:
                     else:
                         result = AppSyncResult.SYNCED
                         result_str = "host == cloud"
-                
+
                 elif host_exists and not cloud_exists:
                     shutil.copytree(host_path, cloud_path)
                     result = AppSyncResult.HOST_TO_CLOUD
