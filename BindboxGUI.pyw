@@ -460,6 +460,8 @@ if __name__ == '__main__':
 
     loadResources()
 
+    # TODO: handle little time before first sync
+
     window = AppWindow()
     app.connect(app, QtCore.SIGNAL("aboutToQuit()"), window.app_stopAllTasks)
 

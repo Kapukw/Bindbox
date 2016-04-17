@@ -112,28 +112,24 @@ class AppSyncResult(object):
 class AppData(object):
     def __init__(self, json_dict):
         self.name = json_dict['name']
-        self.proc_names = json_dict['proc_names'] if 'proc_names' in json_dict else None
+        self.proc_names = json_dict['proc_names'] if 'proc_names' in json_dict else []
         self.paths = json_dict['paths'][get_host_name()]
         self.preprocess = json_dict['preprocess'] if 'preprocess' in json_dict else None
         self.preprocess_native = json_dict['preprocess_native'] if 'preprocess_native' in json_dict else None
 
     def sync_config(self, callback=None):
-        print(self.name + ":")
+        print self.name + ":"
 
-        if self.proc_names != None:
-            for proc_name in self.proc_names:
-                if proc_name in list_processes():
-                    print("Skip '" + self.name + "' because it's running.")
-                    return
+        for proc_name in self.proc_names:
+            if proc_name in list_processes():
+                print "Skip '{}' because it's running.".format(self.name)
+                return
 
         if self.paths != []:
             for i in range(0, len(self.paths)):
 
                 host_path = os.path.normpath(os.path.expandvars(self.paths[i]))
-                print("\thost path: %s" % host_path)
                 cloud_path = os.path.normpath(os.path.join(get_cloud_path(), self.name, str(i), ""))
-                print("\tcloud path: %s" % cloud_path)
-
                 host_exists = os.path.exists(host_path)
                 cloud_exists = os.path.exists(cloud_path)
 
@@ -143,20 +139,21 @@ class AppData(object):
                 if host_exists and cloud_exists:
 
                     hp_mtime = int(get_tree_mtime(host_path))
-                    print("\thost modified: %s" % time.ctime(hp_mtime))
-
                     cp_mtime = int(get_tree_mtime(cloud_path))
-                    print("\tcloud modified: %s" % time.ctime(cp_mtime))
+
+                    print "\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(host_path, cloud_path, time.ctime(hp_mtime), time.ctime(cp_mtime))
 
                     if hp_mtime > cp_mtime:
-                        shutil.rmtree(cloud_path)
-                        shutil.copytree(host_path, cloud_path)
+                        if not replace_tree(host_path, cloud_path):
+                            print "\tSkip '{}' because it's locked.".format(cloud_path)
+                            continue
                         result = AppSyncResult.HOST_TO_CLOUD
                         result_str = "host -> cloud"
 
                     elif hp_mtime < cp_mtime:
-                        shutil.rmtree(host_path)
-                        shutil.copytree(cloud_path, host_path)
+                        if not replace_tree(cloud_path, host_path):
+                            print "\tSkip '{}' because it's locked.".format(host_path)
+                            continue
                         result = AppSyncResult.CLOUD_TO_HOST
                         result_str = "host <- cloud"
 
@@ -183,9 +180,22 @@ class AppData(object):
                     preprocess(host_path, cloud_path, self.preprocess_native, True, True)
 
                 if result != None:
-                    print("\t" + result_str)
+                    print "\t{}".format(result_str)
                     if callback != None and result != AppSyncResult.SYNCED:
                         callback(self.name, result)
+
+def replace_tree(src, dst):
+
+    # check access to 'dst' before removing
+    try:
+        os.rename(dst, dst + "_")
+        os.rename(dst + "_", dst)
+    except OSError as e:
+        return False
+
+    shutil.rmtree(dst)
+    shutil.copytree(src, dst)
+    return True
 
 def main_func(callback=None):
 
