@@ -189,11 +189,10 @@ def replace_tree(src, dst):
     # check access to 'dst' before removing
     try:
         os.rename(dst, dst + "_")
-        os.rename(dst + "_", dst)
     except OSError as e:
         return False
 
-    shutil.rmtree(dst)
+    shutil.rmtree(dst + "_")
     shutil.copytree(src, dst)
     return True
 
