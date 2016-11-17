@@ -249,7 +249,7 @@ class AppWindow(QtGui.QWidget):
 
     def createBottomWidget(self):
 
-        self.hostNameLabel = QtGui.QLabel(Bindbox.get_host_name())
+        self.hostNameLabel = QtGui.QLabel(Bindbox.getHostName())
         self.hostNameLabel.setObjectName("hostNameLabel")
         self.hostNameLabel.setFont(QtGui.QFont("Eurostile", 16, QtGui.QFont.Normal))
         self.appCountLabel = QtGui.QLabel("8/12")
@@ -392,7 +392,7 @@ class WorkThread(QtCore.QThread):
             self.updateBeginSyncTime(time.time())
 
             try:
-                Bindbox.main_func(self.addAppInfo)
+                Bindbox.mainFunction(self.addAppInfo)
             except Exception:
                 self.raiseMessageBox("Sync: Unexpected Error", traceback.format_exc())
                 sync_status = 1

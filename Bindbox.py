@@ -1,10 +1,10 @@
 ﻿import os
+import stat
 import socket
 import shutil
 import time
 import json
 from tempfile import mkstemp
-from stat import S_ISDIR, S_ISREG
 
 import psutil
 
@@ -12,180 +12,194 @@ import psutil
 CLOUD_DIR = os.path.normcase("Dropbox/Bindbox/")
 PATHS_FILE = "paths.json"
 
-def get_host_name():
-    return socket.gethostname()
+g_numTotalApps = None
+g_numSyncedApps = None
 
-def get_config_path():
+def getHostName():
+    name = socket.gethostname()
+    return name
+
+def getSyncStats():
+    if g_numTotalApps is None or g_numSyncedApps is None:
+        return "..."
+    return "{}/{}".format(g_numSyncedApps, g_numTotalApps)
+
+def getConfigPath():
     path = os.path.join(os.path.expanduser("~"), CLOUD_DIR, PATHS_FILE)
     return path
 
-def get_cloud_path():
+def getCloudPath():
     path = os.path.join(os.path.expanduser("~"), CLOUD_DIR)
     return path
 
-def list_processes():
-    proc_names = list()
+def listProcesses():
+    procNames = list()
     for proc in psutil.process_iter():
         try:
-            proc_name = proc.name()
+            procName = proc.name()
         except psutil.NoSuchProcess:
             pass
         else:
-            proc_names.append(proc_name)
-    return proc_names
+            procNames.append(procName)
+    return procNames
 
-def get_tree_mtime(top):
-    mtime = os.stat(top).st_mtime
+def getTreeModificationTime(rootPath):
+    mtime = os.stat(rootPath).st_mtime
     new_mtime = mtime
-    for child in os.listdir(top):
-        path = os.path.join(top, child)
-        mode = os.stat(path).st_mode
-        if S_ISDIR(mode):
-            new_mtime = get_tree_mtime(path)
-        elif S_ISREG(mode):
-            new_mtime = os.stat(path).st_mtime
-        else: print 'Skipping %s' % path
-        if new_mtime > mtime:
-            mtime = new_mtime
+
+    for child in os.listdir(rootPath):
+
+        childPath = os.path.join(rootPath, child)
+        childMode = os.stat(childPath).st_mode
+
+        # directory
+        if stat.S_ISDIR(childMode):
+            new_mtime = getTreeModificationTime(childPath)
+
+        # file
+        elif stat.S_ISREG(childMode):
+            new_mtime = os.stat(childPath).st_mtime
+
+        mtime = max(new_mtime, mtime)
+
     return mtime
 
-def copystat_recursive(src, dst):
-
+def copystatRecursive(src, dst):
     if S_ISDIR(os.stat(src).st_mode):
-        src_entries = os.listdir(src)
-        dst_entries = os.listdir(dst)
-        count = len(src_entries)
-
-        for i in xrange(0, count):
-            copystat_recursive(os.path.join(src, src_entries[i]), os.path.join(dst, dst_entries[i]))
-
+        srcEntries = os.listdir(src)
+        dstEntries = os.listdir(dst)
+        for i in xrange(0, len(srcEntries)):
+            copystatRecursive(os.path.join(src, srcEntries[i]), os.path.join(dst, dstEntries[i]))
     shutil.copystat(src, dst)
 
+def replaceInFile(filePath, pattern, subst):
+    fileHandle, absPath = mkstemp()
+    with open(absPath, 'w') as newFile:
+        with open(filePath) as oldFile:
+            for line in oldFile:
+                newFile.write(line.replace(pattern, subst))
+    os.close(fileHandle)
+    os.remove(filePath)
+    shutil.move(absPath, filePath)
 
-def replace(file_path, pattern, subst):
-    file_handle, abs_path = mkstemp()
-    with open(abs_path, 'w') as new_file:
-        with open(file_path) as old_file:
-            for line in old_file:
-                new_file.write(line.replace(pattern, subst))
-    os.close(file_handle)
-    os.remove(file_path)
-    shutil.move(abs_path, file_path)
-
-def preprocess(src_dir, dst_dir, preprocess_dict, from_local, native):
-    if preprocess_dict is None:
+def preprocess(srcDirPath, dstDirPath, preprocessDict, fromLocal, native):
+    if preprocessDict is None:
         return
-    for var_name, file_names in preprocess_dict.iteritems():
-        for file_name in file_names:
 
-            src_path = os.path.join(src_dir, file_name)
-            if not os.path.exists(src_path) or not os.path.isfile(src_path):
+    for varName, fileNames in preprocessDict.iteritems():
+        for fileName in fileNames:
+
+            srcPath = os.path.join(srcDirPath, fileName)
+            dstPath = os.path.join(dstDirPath, fileName)
+
+            if not os.path.exists(srcPath) or not os.path.isfile(srcPath):
+                continue
+            if not os.path.exists(dstPath) or not os.path.isfile(dstPath):
                 continue
 
-            dst_path = os.path.join(dst_dir, file_name)
-            if not os.path.exists(dst_path) or not os.path.isfile(dst_path):
-                continue
+            varValue = os.path.expandvars(varName)
+            varValue = varValue.replace('\\', '\\\\') if native else varValue.replace('\\', '/')
 
-            var_value = os.path.expandvars(var_name)
-            if native:
-                var_value = var_value.replace('\\', '\\\\')
+            if fromLocal:
+                pattern = varValue
+                subst = varName
             else:
-                var_value = var_value.replace('\\', '/')
+                pattern = varName
+                subst = varValue
 
-            if from_local:
-                pattern = var_value
-                subst = var_name
-            else:
-                pattern = var_name
-                subst = var_value
+            print "replace {} {} {}".format(dstPath, pattern, subst)
+            replaceInFile(dstPath, pattern, subst)
 
-            print("replace " + dst_path + " " + pattern + " " + subst)
-            replace(dst_path, pattern, subst)
-
-    copystat_recursive(src_dir, dst_dir)
+    copystatRecursive(srcDirPath, dstDirPath)
 
 class AppSyncResult(object):
-    SYNCED = 0
-    CLOUD_TO_HOST = 1
-    HOST_TO_CLOUD = 2
+    NOT_SYNCED = 0
+    SYNCED = 1
+    CLOUD_TO_HOST = 2
+    HOST_TO_CLOUD = 3
+
+def getResultStr(result):
+    s = { AppSyncResult.NOT_SYNCED    : "not synced",
+          AppSyncResult.SYNCED        : "host == cloud",
+          AppSyncResult.CLOUD_TO_HOST : "host <- cloud",
+          AppSyncResult.HOST_TO_CLOUD : "host -> cloud" }
+    return s[result]
 
 class AppData(object):
-    def __init__(self, json_dict):
-        self.name = json_dict['name']
-        self.proc_names = json_dict['proc_names'] if 'proc_names' in json_dict else []
-        self.paths = json_dict['paths'][get_host_name()]
-        self.preprocess = json_dict['preprocess'] if 'preprocess' in json_dict else None
-        self.preprocess_native = json_dict['preprocess_native'] if 'preprocess_native' in json_dict else None
+    def __init__(self, jsonDict):
+        self.name = jsonDict['name']
+        self.procNames = jsonDict['proc_names'] if 'proc_names' in jsonDict else []
+        self.paths = jsonDict['paths'][getHostName()]
+        self.preprocess = jsonDict['preprocess'] if 'preprocess' in jsonDict else None
+        self.preprocessNative = jsonDict['preprocess_native'] if 'preprocess_native' in jsonDict else None
 
-    def sync_config(self, callback=None):
-        print self.name + ":"
+    def syncConfig(self, callback=None):
+        print "{}:".format(self.name)
 
-        for proc_name in self.proc_names:
-            if proc_name in list_processes():
+        for procName in self.procNames:
+            if procName in listProcesses():
                 print "Skip '{}' because it's running.".format(self.name)
                 return
 
-        if self.paths != []:
-            for i in range(0, len(self.paths)):
+        if self.paths == []:
+            return
 
-                host_path = os.path.normpath(os.path.expandvars(self.paths[i]))
-                cloud_path = os.path.normpath(os.path.join(get_cloud_path(), self.name, str(i), ""))
-                host_exists = os.path.exists(host_path)
-                cloud_exists = os.path.exists(cloud_path)
+        for i in xrange(0, len(self.paths)):
 
-                result = None
-                result_str = None
+            result = AppSyncResult.NOT_SYNCED
 
-                if host_exists and cloud_exists:
+            hostPath = os.path.normpath(os.path.expandvars(self.paths[i]))
+            cloudPath = os.path.normpath(os.path.join(getCloudPath(), self.name, str(i), ""))
+                
+            isHostExists = os.path.exists(hostPath)
+            isCloudExists = os.path.exists(cloudPath)
 
-                    hp_mtime = int(get_tree_mtime(host_path))
-                    cp_mtime = int(get_tree_mtime(cloud_path))
+            if isHostExists and isCloudExists:
 
-                    print "\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(host_path, cloud_path, time.ctime(hp_mtime), time.ctime(cp_mtime))
+                hp_mtime = int(getTreeModificationTime(hostPath))
+                cp_mtime = int(getTreeModificationTime(cloudPath))
 
-                    if hp_mtime > cp_mtime:
-                        if not replace_tree(host_path, cloud_path):
-                            print "\tSkip '{}' because it's locked.".format(cloud_path)
-                            continue
-                        result = AppSyncResult.HOST_TO_CLOUD
-                        result_str = "host -> cloud"
+                print "\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(hostPath, cloudPath, time.ctime(hp_mtime), time.ctime(cp_mtime))
 
-                    elif hp_mtime < cp_mtime:
-                        if not replace_tree(cloud_path, host_path):
-                            print "\tSkip '{}' because it's locked.".format(host_path)
-                            continue
-                        result = AppSyncResult.CLOUD_TO_HOST
-                        result_str = "host <- cloud"
-
-                    else:
-                        result = AppSyncResult.SYNCED
-                        result_str = "host == cloud"
-
-                elif host_exists and not cloud_exists:
-                    shutil.copytree(host_path, cloud_path)
+                if hp_mtime > cp_mtime:
+                    if not replaceTree(hostPath, cloudPath):
+                        print "\tSkip '{}' because it's locked.".format(cloudPath)
+                        continue
                     result = AppSyncResult.HOST_TO_CLOUD
-                    result_str = "host -> cloud"
 
-                elif not host_exists and cloud_exists:
-                    shutil.copytree(cloud_path, host_path)
+                elif hp_mtime < cp_mtime:
+                    if not replaceTree(cloudPath, hostPath):
+                        print "\tSkip '{}' because it's locked.".format(hostPath)
+                        continue
                     result = AppSyncResult.CLOUD_TO_HOST
-                    result_str = "host <- cloud"
 
-                if result == AppSyncResult.CLOUD_TO_HOST:
-                    preprocess(cloud_path, host_path, self.preprocess, False, False)
-                    preprocess(cloud_path, host_path, self.preprocess_native, False, True)
+                else:
+                    result = AppSyncResult.SYNCED
 
-                elif result == AppSyncResult.HOST_TO_CLOUD:
-                    preprocess(host_path, cloud_path, self.preprocess, True, False)
-                    preprocess(host_path, cloud_path, self.preprocess_native, True, True)
+            elif isHostExists and not isCloudExists:
+                shutil.copytree(hostPath, cloudPath)
+                result = AppSyncResult.HOST_TO_CLOUD
 
-                if result != None:
-                    print "\t{}".format(result_str)
-                    if callback != None and result != AppSyncResult.SYNCED:
-                        callback(self.name, result)
+            elif not isHostExists and isCloudExists:
+                shutil.copytree(cloudPath, hostPath)
+                result = AppSyncResult.CLOUD_TO_HOST
 
-def replace_tree(src, dst):
+            # preprocess
+            if result == AppSyncResult.CLOUD_TO_HOST:
+                preprocess(cloudPath, hostPath, self.preprocess, fromLocal=False, native=False)
+                preprocess(cloudPath, hostPath, self.preprocessNative, fromLocal=False, native=True)
 
+            elif result == AppSyncResult.HOST_TO_CLOUD:
+                preprocess(hostPath, cloudPath, self.preprocess, fromLocal=True, native=False)
+                preprocess(hostPath, cloudPath, self.preprocessNative, fromLocal=True, native=True)
+
+            print "\t{}".format(getResultStr(result))
+
+            if callback is not None:
+                if result != AppSyncResult.NOT_SYNCED and result != AppSyncResult.SYNCED:
+                    callback(self.name, result)
+
+def replaceTree(src, dst):
     # check access to 'dst' before removing
     try:
         os.rename(dst, dst + "_")
@@ -196,20 +210,25 @@ def replace_tree(src, dst):
     shutil.copytree(src, dst)
     return True
 
-def main_func(callback=None):
+def mainFunction(callback=None):
 
-    json_file = open(get_config_path(), 'r')
-    json_data = json.load(json_file)
+    jsonFile = open(getConfigPath(), 'r')
+    jsonData = json.load(jsonFile)
 
-    apps_data = list()
-    for app in json_data:
-        apps_data.append(AppData(json_data[app]))
+    appsData = list()
+    for app in jsonData:
+        appsData.append(AppData(jsonData[app]))
 
-    for app in apps_data:
-        app.sync_config(callback)
+    global g_numTotalApps
+    g_numTotalApps = len(appsData)
 
-    json_file.close()
+    global g_numSyncedApps
+    g_numSyncedApps = 0
 
-# execute
+    for app in appsData:
+        app.syncConfig(callback)
+
+    jsonFile.close()
+
 if __name__ == "__main__":
-    main_func()
+    mainFunction()
