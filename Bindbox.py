@@ -114,13 +114,13 @@ def preprocess(srcDirPath, dstDirPath, preprocessDict, fromLocal, native):
 
 class AppSyncResult(object):
     NOT_SYNCED = 0
-    SYNCED = 1
+    EQUAL = 1
     CLOUD_TO_HOST = 2
     HOST_TO_CLOUD = 3
 
 def getResultStr(result):
     s = { AppSyncResult.NOT_SYNCED    : "not synced",
-          AppSyncResult.SYNCED        : "host == cloud",
+          AppSyncResult.EQUAL         : "host == cloud",
           AppSyncResult.CLOUD_TO_HOST : "host <- cloud",
           AppSyncResult.HOST_TO_CLOUD : "host -> cloud" }
     return s[result]
@@ -136,13 +136,13 @@ class AppData(object):
     def syncConfig(self, callback=None):
         print "{}:".format(self.name)
 
+        currentProcesses = listProcesses()
         for procName in self.procNames:
-            if procName in listProcesses():
+            if procName in currentProcesses:
                 print "Skip '{}' because it's running.".format(self.name)
                 return
 
-        if self.paths == []:
-            return
+        syncHappened = False
 
         for i in xrange(0, len(self.paths)):
 
@@ -174,7 +174,7 @@ class AppData(object):
                     result = AppSyncResult.CLOUD_TO_HOST
 
                 else:
-                    result = AppSyncResult.SYNCED
+                    result = AppSyncResult.EQUAL
 
             elif isHostExists and not isCloudExists:
                 shutil.copytree(hostPath, cloudPath)
@@ -195,9 +195,14 @@ class AppData(object):
 
             print "\t{}".format(getResultStr(result))
 
-            if callback is not None:
-                if result != AppSyncResult.NOT_SYNCED and result != AppSyncResult.SYNCED:
+            if result == AppSyncResult.CLOUD_TO_HOST or result == AppSyncResult.HOST_TO_CLOUD:
+                syncHappened = True
+                if callback is not None:
                     callback(self.name, result)
+
+        if syncHappened:
+            global g_numSyncedApps
+            g_numSyncedApps += 1
 
 def replaceTree(src, dst):
     # check access to 'dst' before removing

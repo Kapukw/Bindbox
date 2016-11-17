@@ -14,8 +14,8 @@ import Utils
 import BindboxGUI_rc
 
 
-g_sleep_min = 10
-g_max_messages_count = 30
+g_sleepMin = 10
+g_maxMessagesCount = 30
 
 
 class TimestampWidget(QtGui.QWidget):
@@ -252,7 +252,7 @@ class AppWindow(QtGui.QWidget):
         self.hostNameLabel = QtGui.QLabel(Bindbox.getHostName())
         self.hostNameLabel.setObjectName("hostNameLabel")
         self.hostNameLabel.setFont(QtGui.QFont("Eurostile", 16, QtGui.QFont.Normal))
-        self.appCountLabel = QtGui.QLabel("8/12")
+        self.appCountLabel = QtGui.QLabel(Bindbox.getSyncStats())
         self.appCountLabel.setObjectName("appCountLabel")
         self.appCountLabel.setFont(QtGui.QFont("Eurostile", 12, QtGui.QFont.Normal))
 
@@ -294,9 +294,9 @@ class AppWindow(QtGui.QWidget):
 
     @Utils.PyQtSlotWithExceptions()
     def timer_updateGUI(self):
-        remaining_time = self.lastEndSyncTime + g_sleep_min*60 - time.time()
-        if remaining_time > 0:
-            self.timeToSyncLabel.setText(Utils.str_time_adj(remaining_time))
+        remainingTime = self.lastEndSyncTime + g_sleepMin * 60 - time.time()
+        if remainingTime > 0:
+            self.timeToSyncLabel.setText(Utils.str_time_adj(remainingTime))
         else:
             self.timeToSyncLabel.setText("...")
 
@@ -349,7 +349,7 @@ class AppWindow(QtGui.QWidget):
 
     def addListWidgetItem(self, widget):
         itemsCount = self.listWidget.count()
-        if itemsCount >= g_max_messages_count:
+        if itemsCount >= g_maxMessagesCount:
             listWidgetItem = self.listWidget.item(itemsCount-1)
             self.listWidget.removeItemWidget(listWidgetItem)
             listWidgetItem = self.listWidget.takeItem(itemsCount-1)
@@ -370,6 +370,7 @@ class AppWindow(QtGui.QWidget):
 
     @Utils.PyQtSlotWithExceptions()
     def wt_addTimestamp(self, timestamp, result):
+        self.appCountLabel.setText(Bindbox.getSyncStats())
         self.addListWidgetItem(TimestampWidget(timestamp, result))
 
     @Utils.PyQtSlotWithExceptions()
@@ -404,8 +405,8 @@ class WorkThread(QtCore.QThread):
                 self.addTimestamp(t, sync_status)
                 self.isWorking = False
 
-                print("sleep " + str(g_sleep_min) + " min")
-                self.sleep(int(60 * g_sleep_min))
+                print("sleep " + str(g_sleepMin) + " min")
+                self.sleep(int(g_sleepMin * 60))
 
     def updateBeginSyncTime(self, t):
         self.emit(QtCore.SIGNAL('wt_updateBeginSyncTime(PyQt_PyObject)'), t)
