@@ -302,7 +302,7 @@ class AppWindow(QtGui.QWidget):
 
     @Utils.PyQtSlotWithExceptions()
     def btn_openConfig(self):
-        os.startfile(Bindbox.get_config_path())
+        os.startfile(Bindbox.getConfigPath())
 
     @Utils.PyQtSlotWithExceptions()
     def app_stopAllTasks(self):
