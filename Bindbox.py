@@ -65,7 +65,7 @@ def getTreeModificationTime(rootPath):
     return mtime
 
 def copystatRecursive(src, dst):
-    if S_ISDIR(os.stat(src).st_mode):
+    if stat.S_ISDIR(os.stat(src).st_mode):
         srcEntries = os.listdir(src)
         dstEntries = os.listdir(dst)
         for i in xrange(0, len(srcEntries)):
