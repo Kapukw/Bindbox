@@ -68,7 +68,7 @@ def copystatRecursive(src, dst):
     if stat.S_ISDIR(os.stat(src).st_mode):
         srcEntries = os.listdir(src)
         dstEntries = os.listdir(dst)
-        for i in xrange(0, len(srcEntries)):
+        for i in range(0, len(srcEntries)):
             copystatRecursive(os.path.join(src, srcEntries[i]), os.path.join(dst, dstEntries[i]))
     shutil.copystat(src, dst)
 
@@ -107,7 +107,7 @@ def preprocess(srcDirPath, dstDirPath, preprocessDict, fromLocal, native):
                 pattern = varName
                 subst = varValue
 
-            print "replace {} {} {}".format(dstPath, pattern, subst)
+            print("replace {} {} {}".format(dstPath, pattern, subst))
             replaceInFile(dstPath, pattern, subst)
 
     copystatRecursive(srcDirPath, dstDirPath)
@@ -134,17 +134,17 @@ class AppData(object):
         self.preprocessNative = jsonDict['preprocess_native'] if 'preprocess_native' in jsonDict else None
 
     def syncConfig(self, callback=None):
-        print "{}:".format(self.name)
+        print("{}:".format(self.name))
 
         currentProcesses = listProcesses()
         for procName in self.procNames:
             if procName in currentProcesses:
-                print "Skip '{}' because it's running.".format(self.name)
+                print("Skip '{}' because it's running.".format(self.name))
                 return
 
         syncHappened = False
 
-        for i in xrange(0, len(self.paths)):
+        for i in range(0, len(self.paths)):
 
             result = AppSyncResult.NOT_SYNCED
 
@@ -159,17 +159,17 @@ class AppData(object):
                 hp_mtime = int(getTreeModificationTime(hostPath))
                 cp_mtime = int(getTreeModificationTime(cloudPath))
 
-                print "\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(hostPath, cloudPath, time.ctime(hp_mtime), time.ctime(cp_mtime))
+                print("\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(hostPath, cloudPath, time.ctime(hp_mtime), time.ctime(cp_mtime)))
 
                 if hp_mtime > cp_mtime:
                     if not replaceTree(hostPath, cloudPath):
-                        print "\tSkip '{}' because it's locked.".format(cloudPath)
+                        print("\tSkip '{}' because it's locked.".format(cloudPath))
                         continue
                     result = AppSyncResult.HOST_TO_CLOUD
 
                 elif hp_mtime < cp_mtime:
                     if not replaceTree(cloudPath, hostPath):
-                        print "\tSkip '{}' because it's locked.".format(hostPath)
+                        print("\tSkip '{}' because it's locked.".format(hostPath))
                         continue
                     result = AppSyncResult.CLOUD_TO_HOST
 
@@ -193,7 +193,7 @@ class AppData(object):
                 preprocess(hostPath, cloudPath, self.preprocess, fromLocal=True, native=False)
                 preprocess(hostPath, cloudPath, self.preprocessNative, fromLocal=True, native=True)
 
-            print "\t{}".format(getResultStr(result))
+            print("\t{}".format(getResultStr(result)))
 
             if result == AppSyncResult.CLOUD_TO_HOST or result == AppSyncResult.HOST_TO_CLOUD:
                 syncHappened = True

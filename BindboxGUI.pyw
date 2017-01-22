@@ -3,44 +3,41 @@ import os
 import time
 import traceback
 
-# This is only needed for Python v2 but is harmless for Python v3.
-import sip
-sip.setapi('QVariant', 2)
+from PyQt5 import QtCore, QtGui, QtWidgets
 
-from PyQt4 import QtCore, QtGui
-
-import Bindbox
 import Utils
+import Bindbox
+
 import BindboxGUI_rc
 
 
-g_sleepMin = 10
+g_sleepMin = 10.0
 g_maxMessagesCount = 30
 
 
-class TimestampWidget(QtGui.QWidget):
+class TimestampWidget(QtWidgets.QWidget):
     errorPix = None
     successPix = None
 
     def __init__(self, timestamp, result):
         super(TimestampWidget, self).__init__()
 
-        resultLabel = QtGui.QLabel()
+        resultLabel = QtWidgets.QLabel()
         if result == 0:
             resultLabel.setPixmap(self.successPix)
         else:
             resultLabel.setPixmap(self.errorPix)
 
-        timestampLabel = QtGui.QLabel()
+        timestampLabel = QtWidgets.QLabel()
         timestampLabel.setObjectName("timestampLabel")
         timestampLabel.setFont(QtGui.QFont("Eurostile", 10, QtGui.QFont.Normal))
-        timestampLabel.setText(Utils.str_time(timestamp))
+        timestampLabel.setText(Utils.stringFromTime(timestamp))
 
-        lineWidget = QtGui.QWidget()
+        lineWidget = QtWidgets.QWidget()
         lineWidget.setObjectName("lineWidget")
         lineWidget.setFixedHeight(4)
 
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.addWidget(resultLabel)
         layout.addWidget(timestampLabel)
         layout.addWidget(lineWidget)
@@ -49,19 +46,19 @@ class TimestampWidget(QtGui.QWidget):
         self.setLayout(layout)
 
 
-class AppInfoWidget(QtGui.QWidget):
+class AppInfoWidget(QtWidgets.QWidget):
     toHostPix = None
     toCloudPix = None
 
     def __init__(self, name, result):
         super(AppInfoWidget, self).__init__()
 
-        appNameLabel = QtGui.QLabel()
+        appNameLabel = QtWidgets.QLabel()
         appNameLabel.setObjectName("appNameLabel")
         appNameLabel.setFont(QtGui.QFont("Eurostile", 12, QtGui.QFont.Normal))
         appNameLabel.setText(name)
 
-        appSyncResultLabel = QtGui.QLabel()
+        appSyncResultLabel = QtWidgets.QLabel()
         appSyncResultLabel.setObjectName("appSyncResultLabel")
         appSyncResultLabel.setText(str(result))
         if result == Bindbox.AppSyncResult.HOST_TO_CLOUD:
@@ -69,26 +66,26 @@ class AppInfoWidget(QtGui.QWidget):
         elif result == Bindbox.AppSyncResult.CLOUD_TO_HOST:
             appSyncResultLabel.setPixmap(self.toHostPix)
 
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.addWidget(appNameLabel)
         layout.addStretch()
         layout.addWidget(appSyncResultLabel)
         layout.setContentsMargins(15, 0, 20, 0)
         layout.setSpacing(0)
 
-        backgroundWidget = QtGui.QWidget()
+        backgroundWidget = QtWidgets.QWidget()
         backgroundWidget.setObjectName("backgroundWidget")
         backgroundWidget.setFixedSize(320, 38)
         backgroundWidget.setLayout(layout)
 
-        backgroundLayout = QtGui.QHBoxLayout()
+        backgroundLayout = QtWidgets.QHBoxLayout()
         backgroundLayout.addWidget(backgroundWidget)
         backgroundLayout.setAlignment(QtCore.Qt.AlignLeft)
         backgroundLayout.setContentsMargins(28, 0, 0, 0)
         self.setLayout(backgroundLayout)
 
 
-class AppWindow(QtGui.QWidget):
+class AppWindow(QtWidgets.QWidget):
     qss = """
             QWidget#appWindow {
                 background-color: #373737;
@@ -180,7 +177,7 @@ class AppWindow(QtGui.QWidget):
     def __init__(self):
         super(AppWindow, self).__init__()
 
-        self.layout = QtGui.QVBoxLayout(self)
+        self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
         self.createTopWidget()
@@ -203,13 +200,13 @@ class AppWindow(QtGui.QWidget):
         self.startupScript()
 
     def createTrayIcon(self):
-        showAction = QtGui.QAction("&Show", self, triggered=self.show)
-        quitAction = QtGui.QAction("&Quit", self, triggered=QtGui.qApp.quit)
-        trayIconMenu = QtGui.QMenu(self)
+        showAction = QtWidgets.QAction("&Show", self, triggered=self.show)
+        quitAction = QtWidgets.QAction("&Quit", self, triggered=QtCore.QCoreApplication.instance().quit)
+        trayIconMenu = QtWidgets.QMenu(self)
         trayIconMenu.addAction(showAction)
         trayIconMenu.addSeparator()
         trayIconMenu.addAction(quitAction)
-        self.trayIcon = QtGui.QSystemTrayIcon(self)
+        self.trayIcon = QtWidgets.QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(trayIconMenu)
         self.trayIcon.setToolTip("Bindbox")
         self.trayIcon.setIcon(self.iconTray)
@@ -218,94 +215,92 @@ class AppWindow(QtGui.QWidget):
 
     def createTopWidget(self):
 
-        self.openConfigButton = QtGui.QPushButton()
+        self.openConfigButton = QtWidgets.QPushButton()
         self.openConfigButton.setObjectName("openConfigButton")
         self.openConfigButton.setFixedSize(QtCore.QSize(32, 32))
         self.openConfigButton.setIcon(self.iconOptions)
         self.openConfigButton.setIconSize(QtCore.QSize(32, 32))
-        self.openConfigButton.connect(self.openConfigButton, QtCore.SIGNAL("clicked()"), self.btn_openConfig)
-        layout = QtGui.QHBoxLayout()
+        self.openConfigButton.clicked.connect(self.openConfig)
+        layout = QtWidgets.QHBoxLayout()
         layout.addStretch()
         layout.addWidget(self.openConfigButton)
         layout.setContentsMargins(6, 6, 6, 6)
         layout.setSpacing(0)
-        widget = QtGui.QWidget()
+        widget = QtWidgets.QWidget()
         widget.setLayout(layout)
         self.layout.addWidget(widget)
 
     def createListWidget(self):
-        self.listWidget = QtGui.QListWidget()
+        self.listWidget = QtWidgets.QListWidget()
         self.listWidget.setObjectName("listWidget")
         self.listWidget.setSortingEnabled(True)
         self.listWidget.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.listWidget.setVerticalScrollMode(QtGui.QAbstractItemView.ScrollPerPixel)
-        layout = QtGui.QVBoxLayout()
+        self.listWidget.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.listWidget)
         layout.setContentsMargins(3, 0, 3, 0)
         layout.setSpacing(0)
-        widget = QtGui.QWidget()
+        widget = QtWidgets.QWidget()
         widget.setLayout(layout)
         self.layout.addWidget(widget)
 
     def createBottomWidget(self):
-
-        self.hostNameLabel = QtGui.QLabel(Bindbox.getHostName())
+        self.hostNameLabel = QtWidgets.QLabel(Bindbox.getHostName())
         self.hostNameLabel.setObjectName("hostNameLabel")
         self.hostNameLabel.setFont(QtGui.QFont("Eurostile", 16, QtGui.QFont.Normal))
-        self.appCountLabel = QtGui.QLabel(Bindbox.getSyncStats())
+        self.appCountLabel = QtWidgets.QLabel(Bindbox.getSyncStats())
         self.appCountLabel.setObjectName("appCountLabel")
         self.appCountLabel.setFont(QtGui.QFont("Eurostile", 12, QtGui.QFont.Normal))
 
-        leftLayout = QtGui.QVBoxLayout()
+        leftLayout = QtWidgets.QVBoxLayout()
         leftLayout.addWidget(self.hostNameLabel)
         leftLayout.addWidget(self.appCountLabel)
         leftLayout.setContentsMargins(0, 0, 0, 0)
         leftLayout.setSpacing(0)
-        leftWidget = QtGui.QWidget()
+        leftWidget = QtWidgets.QWidget()
         leftWidget.setLayout(leftLayout)
 
         timer = QtCore.QTimer(self)
-        timer.connect(timer, QtCore.SIGNAL("timeout()"), self.timer_updateGUI)
+        timer.timeout.connect(self.updateGuiByTimer)
         timer.start(1000)
-        self.timeToSyncLabel = QtGui.QLabel()
+        self.timeToSyncLabel = QtWidgets.QLabel()
         self.timeToSyncLabel.setObjectName("timeToSyncLabel")
         self.timeToSyncLabel.setFont(QtGui.QFont("Eurostile", 12, QtGui.QFont.Normal))
 
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.addWidget(leftWidget)
         layout.addStretch()
         layout.addWidget(self.timeToSyncLabel)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(0)
 
-        widget = QtGui.QWidget()
+        widget = QtWidgets.QWidget()
         widget.setFixedHeight(60)
         widget.setLayout(layout)
         self.layout.addWidget(widget)
 
     def startupScript(self):
         self.workThread = WorkThread()
-        self.connect(self.workThread, QtCore.SIGNAL("wt_updateBeginSyncTime(PyQt_PyObject)"), self.wt_updateBeginSyncTime)
-        self.connect(self.workThread, QtCore.SIGNAL("wt_updateEndSyncTime(PyQt_PyObject)"), self.wt_updateEndSyncTime)
-        self.connect(self.workThread, QtCore.SIGNAL("wt_addTimestamp(PyQt_PyObject, PyQt_PyObject)"), self.wt_addTimestamp)
-        self.connect(self.workThread, QtCore.SIGNAL("wt_addAppInfo(PyQt_PyObject, PyQt_PyObject)"), self.wt_addAppInfo)
-        self.connect(self.workThread, QtCore.SIGNAL("wt_raiseMessageBox(PyQt_PyObject, PyQt_PyObject)"), self.wt_raiseMessageBox)
+        self.workThread.updateBeginSyncTimeSignal.connect(self.updateBeginSyncTime)
+        self.workThread.updateEndSyncTimeSignal.connect(self.updateEndSyncTime)
+        self.workThread.addTimestampSignal.connect(self.addTimestamp)
+        self.workThread.addAppInfoSignal.connect(self.addAppInfo)
+        self.workThread.raiseMessageBoxSignal.connect(self.raiseMessageBox)
         self.workThread.start()
 
-    @Utils.PyQtSlotWithExceptions()
-    def timer_updateGUI(self):
-        remainingTime = self.lastEndSyncTime + g_sleepMin * 60 - time.time()
-        if remainingTime > 0:
-            self.timeToSyncLabel.setText(Utils.str_time_adj(remainingTime))
+    @Utils.pyqtSlotWithExceptions()
+    def updateGuiByTimer(self):
+        remainingTime = self.lastEndSyncTime + g_sleepMin * 60.0 - time.time()
+        if remainingTime > 0.0:
+            self.timeToSyncLabel.setText(Utils.stringFromRemainingTime(remainingTime))
         else:
             self.timeToSyncLabel.setText("...")
 
-    @Utils.PyQtSlotWithExceptions()
-    def btn_openConfig(self):
+    def openConfig(self):
         os.startfile(Bindbox.getConfigPath())
 
-    @Utils.PyQtSlotWithExceptions()
-    def app_stopAllTasks(self):
+    @Utils.pyqtSlotWithExceptions()
+    def stopAllTasks(self):
 
         while self.workThread.isWorking:
             print("Wait sync ending...")
@@ -320,7 +315,7 @@ class AppWindow(QtGui.QWidget):
             offset_x = 16
             offset_y = 16
 
-            availableGeometry = QtGui.QApplication.desktop().availableGeometry()
+            availableGeometry = QtWidgets.QApplication.desktop().availableGeometry()
 
             max_x = availableGeometry.width() - self.width() - offset_x
             app_x = self.trayIcon.geometry().center().x() - self.width()/2
@@ -341,7 +336,7 @@ class AppWindow(QtGui.QWidget):
             event.ignore()
 
     def iconActivated(self, reason):
-        if reason in (QtGui.QSystemTrayIcon.Trigger, QtGui.QSystemTrayIcon.DoubleClick) and not self.isVisible():
+        if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick) and not self.isVisible():
             self.show()
 
     def showTrayMessage(self):
@@ -354,7 +349,7 @@ class AppWindow(QtGui.QWidget):
             self.listWidget.removeItemWidget(listWidgetItem)
             listWidgetItem = self.listWidget.takeItem(itemsCount-1)
         else:
-            listWidgetItem = QtGui.QListWidgetItem(self.listWidget)
+            listWidgetItem = QtWidgets.QListWidgetItem(self.listWidget)
 
         listWidgetItem.setSizeHint(widget.sizeHint())
 
@@ -362,30 +357,38 @@ class AppWindow(QtGui.QWidget):
         self.listWidget.setItemWidget(listWidgetItem, widget)
         self.listWidget.setCurrentRow(0)
 
-    def wt_updateBeginSyncTime(self, t):
+    @Utils.pyqtSlotWithExceptions()
+    def updateBeginSyncTime(self, t):
         self.lastBeginSyncTime = t
 
-    def wt_updateEndSyncTime(self, t):
+    @Utils.pyqtSlotWithExceptions()
+    def updateEndSyncTime(self, t):
         self.lastEndSyncTime = t
 
-    @Utils.PyQtSlotWithExceptions()
-    def wt_addTimestamp(self, timestamp, result):
+    @Utils.pyqtSlotWithExceptions()
+    def addTimestamp(self, timestamp, result):
         self.appCountLabel.setText(Bindbox.getSyncStats())
         self.addListWidgetItem(TimestampWidget(timestamp, result))
 
-    @Utils.PyQtSlotWithExceptions()
-    def wt_addAppInfo(self, name, result):
+    @Utils.pyqtSlotWithExceptions()
+    def addAppInfo(self, name, result):
         self.addListWidgetItem(AppInfoWidget(name, result))
 
-    def wt_raiseMessageBox(self, title, text):
-        QtGui.QMessageBox.critical(None, title, text)
+    def raiseMessageBox(self, title, text):
+        QtWidgets.QMessageBox.critical(None, title, text)
 
 
 class WorkThread(QtCore.QThread):
 
+    updateBeginSyncTimeSignal   = QtCore.pyqtSignal('PyQt_PyObject')
+    updateEndSyncTimeSignal     = QtCore.pyqtSignal('PyQt_PyObject')
+    addTimestampSignal          = QtCore.pyqtSignal('PyQt_PyObject', 'PyQt_PyObject')
+    addAppInfoSignal            = QtCore.pyqtSignal('PyQt_PyObject', 'PyQt_PyObject')
+    raiseMessageBoxSignal       = QtCore.pyqtSignal('PyQt_PyObject', 'PyQt_PyObject')
+
     def __init__(self):
-        QtCore.QThread.__init__(self)
         self.isWorking = False
+        return super(WorkThread, self).__init__()
 
     def run(self):
         while True:
@@ -396,43 +399,43 @@ class WorkThread(QtCore.QThread):
                 Bindbox.mainFunction(self.addAppInfo)
             except Exception:
                 self.raiseMessageBox("Sync: Unexpected Error", traceback.format_exc())
-                sync_status = 1
+                syncStatus = 1
             else:
-                sync_status = 0
+                syncStatus = 0
             finally:
-                t = time.time()
-                self.updateEndSyncTime(t)
-                self.addTimestamp(t, sync_status)
+                timestamp = time.time()
+                self.updateEndSyncTime(timestamp)
+                self.addTimestamp(timestamp, syncStatus)
                 self.isWorking = False
 
                 print("sleep " + str(g_sleepMin) + " min")
                 self.sleep(int(g_sleepMin * 60))
 
     def updateBeginSyncTime(self, t):
-        self.emit(QtCore.SIGNAL('wt_updateBeginSyncTime(PyQt_PyObject)'), t)
+        self.updateBeginSyncTimeSignal.emit(t)
 
     def updateEndSyncTime(self, t):
-        self.emit(QtCore.SIGNAL('wt_updateEndSyncTime(PyQt_PyObject)'), t)
+        self.updateEndSyncTimeSignal.emit(t)
 
     def addTimestamp(self, timestamp, result):
-        self.emit(QtCore.SIGNAL('wt_addTimestamp(PyQt_PyObject, PyQt_PyObject)'), timestamp, result)
+        self.addTimestampSignal.emit(timestamp, result)
 
     def addAppInfo(self, name, result):
-        self.emit(QtCore.SIGNAL('wt_addAppInfo(PyQt_PyObject, PyQt_PyObject)'), name, result)
+        self.addAppInfoSignal.emit(name, result)
 
     def raiseMessageBox(self, title, text):
-        self.emit(QtCore.SIGNAL('wt_raiseMessageBox(PyQt_PyObject, PyQt_PyObject)'), title, text)
+        self.raiseMessageBoxSignal.emit(title, text)
 
-class MyApp(QtGui.QApplication):
+class MyApp(QtWidgets.QApplication):
     def notify(self, obj, event):
         try:
-            return QtGui.QApplication.notify(self, obj, event)
+            return QtWidgets.QApplication.notify(self, obj, event)
         except Exception:
-            QtGui.QMessageBox.critical(None, "C++: Unexpected Error", traceback.format_exc())
+            QtWidgets.QMessageBox.critical(None, "C++: Unexpected Error", traceback.format_exc())
             return False
 
-def my_excepthook(exctype, value, tback):
-    QtGui.QMessageBox.critical(None, "Hook: Unexpected Error", traceback.format_exc())
+def myExcepthook(exctype, value, tback):
+    QtWidgets.QMessageBox.critical(None, "Hook: Unexpected Error", traceback.format_exc())
     sys.__excepthook__(exctype, value, tback)
 
 def loadResources():
@@ -449,11 +452,11 @@ def loadResources():
 
 if __name__ == '__main__':
 
-    Utils.win32gui_hook()
-    sys.excepthook = my_excepthook
+    Utils.winGuiHook()
+    sys.excepthook = myExcepthook
 
-    if not QtGui.QSystemTrayIcon.isSystemTrayAvailable():
-        QtGui.QMessageBox.critical(None, "Bindbox", "I couldn't detect any system tray on this system.")
+    if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+        QtWidgets.QMessageBox.critical(None, "Bindbox", "I couldn't detect any system tray on this system.")
         sys.exit(1)
 
     app = MyApp(sys.argv)
@@ -464,11 +467,11 @@ if __name__ == '__main__':
     # TODO: handle little time before first sync
 
     window = AppWindow()
-    app.connect(app, QtCore.SIGNAL("aboutToQuit()"), window.app_stopAllTasks)
+    app.aboutToQuit.connect(window.stopAllTasks)
 
     try:
-        exit_val = app.exec_()
+        exitValue = app.exec_()
     except:
-        exit_val = 1
+        exitValue = 1
     finally:
-        sys.exit(exit_val)
+        sys.exit(exitValue)

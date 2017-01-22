@@ -1,61 +1,64 @@
 ﻿import sys
-import datetime
+import time
 import traceback
-import types
 from functools import wraps
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 
-def str_time(t):
-    return datetime.datetime.fromtimestamp(t).strftime('%H:%M:%S')
+def stringFromTime(t):
+    return time.strftime('%H:%M:%S', time.gmtime(t))
 
-def str_time_adj(t):
-
-    if t < 60:
-        return datetime.datetime.fromtimestamp(t).strftime('%S sec')
-    elif t >= 60 and t < 3600:
-        return datetime.datetime.fromtimestamp(t).strftime('%M min %S sec')
+def stringFromRemainingTime(t):
+    if t < 60.0:
+        return time.strftime('%S sec', time.gmtime(t))
+    elif t >= 60.0 and t < 3600.0:
+        return time.strftime('%M min %S sec', time.gmtime(t))
     else:
-        return datetime.datetime.fromtimestamp(t).strftime('%H h %M min %S sec')
+        return time.strftime('%H h %M min %S sec', time.gmtime(t))
 
-def str_datetime(t):
-    return datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
-
-
-def PyQtSlotWithExceptions(*args):
-    if len(args) == 0 or isinstance(args[0], types.FunctionType):
+def pyqtSlotWithExceptions(*args, **kwargs):
+    if len(args) == 0 or callable(args[0]):
         args = []
-    @QtCore.pyqtSlot(*args)
-    def slotdecorator(func):
+    
+    @QtCore.pyqtSlot(*args, **kwargs)
+    def slotDecorator(func):
         @wraps(func)
-        def wrapper(*args):
+        def wrapper(*args, **kwargs):
             try:
-                func(*args)
+                func(*args, **kwargs)
             except:
-                QtGui.QMessageBox.critical(None, "Slot: Unexpected Error", traceback.format_exc())
+                QtWidgets.QMessageBox.critical(None, "Slot: Unexpected Error", traceback.format_exc())
         return wrapper
-    return slotdecorator
+    return slotDecorator
 
 
-def win32gui_hook():
+def winGuiHook():
+    class DummyStream(object):
+        ''' DummyStream behaves like a stream but does nothing. '''
+        def __init__(self):
+            pass
+        def write(self, data):
+            pass
+        def read(self, data):
+            pass
+        def flush(self):
+            pass
+        def close(self):
+            pass
+
+    def replaceStreams():
+        sys.stdout      = DummyStream()
+        sys.stderr      = DummyStream()
+        sys.stdin       = DummyStream()
+        sys.__stdout__  = DummyStream()
+        sys.__stderr__  = DummyStream()
+        sys.__stdin__   = DummyStream()
+
+    if sys.stdout is None:
+        replaceStreams()
+        return
+
     try:
         sys.stdout.write("\n")
         sys.stdout.flush()
     except IOError:
-        class dummyStream(object):
-            ''' dummyStream behaves like a stream but does nothing. '''
-            def __init__(self):
-                pass
-            def write(self, data):
-                pass
-            def read(self, data):
-                pass
-            def flush(self):
-                pass
-            def close(self):
-                pass
-        sys.stdout = dummyStream()
-        sys.stderr = dummyStream()
-        sys.stdin = dummyStream()
-        sys.__stdout__ = dummyStream()
-        sys.__stderr__ = dummyStream()
-        sys.__stdin__ = dummyStream()
+        replaceStreams()
