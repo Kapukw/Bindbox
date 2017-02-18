@@ -86,7 +86,7 @@ def preprocess(srcDirPath, dstDirPath, preprocessDict, fromLocal, native):
     if preprocessDict is None:
         return
 
-    for varName, fileNames in preprocessDict.iteritems():
+    for varName, fileNames in preprocessDict.items():
         for fileName in fileNames:
 
             srcPath = os.path.join(srcDirPath, fileName)
