@@ -15,22 +15,27 @@ PATHS_FILE = "paths.json"
 g_numTotalApps = None
 g_numSyncedApps = None
 
+
 def getHostName():
     name = socket.gethostname()
     return name
+
 
 def getSyncStats():
     if g_numTotalApps is None or g_numSyncedApps is None:
         return "..."
     return "{}/{}".format(g_numSyncedApps, g_numTotalApps)
 
+
 def getConfigPath():
     path = os.path.join(os.path.expanduser("~"), CLOUD_DIR, PATHS_FILE)
     return path
 
+
 def getCloudPath():
     path = os.path.join(os.path.expanduser("~"), CLOUD_DIR)
     return path
+
 
 def listProcesses():
     procNames = list()
@@ -42,6 +47,7 @@ def listProcesses():
         else:
             procNames.append(procName)
     return procNames
+
 
 def getTreeModificationTime(rootPath):
     mtime = os.stat(rootPath).st_mtime
@@ -64,6 +70,7 @@ def getTreeModificationTime(rootPath):
 
     return mtime
 
+
 def copystatRecursive(src, dst):
     if stat.S_ISDIR(os.stat(src).st_mode):
         srcEntries = os.listdir(src)
@@ -72,45 +79,6 @@ def copystatRecursive(src, dst):
             copystatRecursive(os.path.join(src, srcEntries[i]), os.path.join(dst, dstEntries[i]))
     shutil.copystat(src, dst)
 
-def replaceInFile(filePath, pattern, subst):
-    fileHandle, absPath = mkstemp()
-    with open(absPath, 'w') as newFile:
-        with open(filePath) as oldFile:
-            for line in oldFile:
-                newFile.write(line.replace(pattern, subst))
-    os.close(fileHandle)
-    os.remove(filePath)
-    shutil.move(absPath, filePath)
-
-def preprocess(srcDirPath, dstDirPath, preprocessDict, fromLocal, native):
-    if preprocessDict is None:
-        return
-
-    for varName, fileNames in preprocessDict.items():
-        for fileName in fileNames:
-
-            srcPath = os.path.join(srcDirPath, fileName)
-            dstPath = os.path.join(dstDirPath, fileName)
-
-            if not os.path.exists(srcPath) or not os.path.isfile(srcPath):
-                continue
-            if not os.path.exists(dstPath) or not os.path.isfile(dstPath):
-                continue
-
-            varValue = os.path.expandvars(varName)
-            varValue = varValue.replace('\\', '\\\\') if native else varValue.replace('\\', '/')
-
-            if fromLocal:
-                pattern = varValue
-                subst = varName
-            else:
-                pattern = varName
-                subst = varValue
-
-            print("replace {} {} {}".format(dstPath, pattern, subst))
-            replaceInFile(dstPath, pattern, subst)
-
-    copystatRecursive(srcDirPath, dstDirPath)
 
 class AppSyncResult(object):
     NOT_SYNCED = 0
@@ -118,20 +86,31 @@ class AppSyncResult(object):
     CLOUD_TO_HOST = 2
     HOST_TO_CLOUD = 3
 
+
 def getResultStr(result):
-    s = { AppSyncResult.NOT_SYNCED    : "not synced",
-          AppSyncResult.EQUAL         : "host == cloud",
-          AppSyncResult.CLOUD_TO_HOST : "host <- cloud",
-          AppSyncResult.HOST_TO_CLOUD : "host -> cloud" }
-    return s[result]
+    strings = { AppSyncResult.NOT_SYNCED    : "not synced",
+                AppSyncResult.EQUAL         : "host == cloud",
+                AppSyncResult.CLOUD_TO_HOST : "host <- cloud",
+                AppSyncResult.HOST_TO_CLOUD : "host -> cloud" }
+    return strings[result]
+
+
+def getSyncPaths(jsonDict):
+    if 'paths' not in jsonDict:
+        return []
+    currentHostName = getHostName()
+    for hostName in jsonDict['paths']:
+        if str(currentHostName).lower() == str(hostName).lower():
+            return jsonDict['paths'][hostName]
+    return []
+
 
 class AppData(object):
     def __init__(self, jsonDict):
+        hostName = getHostName()
         self.name = jsonDict['name']
         self.procNames = jsonDict['proc_names'] if 'proc_names' in jsonDict else []
-        self.paths = jsonDict['paths'][getHostName()]
-        self.preprocess = jsonDict['preprocess'] if 'preprocess' in jsonDict else None
-        self.preprocessNative = jsonDict['preprocess_native'] if 'preprocess_native' in jsonDict else None
+        self.paths = getSyncPaths(jsonDict)
 
     def syncConfig(self, callback=None):
         print("{}:".format(self.name))
@@ -184,15 +163,6 @@ class AppData(object):
                 shutil.copytree(cloudPath, hostPath)
                 result = AppSyncResult.CLOUD_TO_HOST
 
-            # preprocess
-            if result == AppSyncResult.CLOUD_TO_HOST:
-                preprocess(cloudPath, hostPath, self.preprocess, fromLocal=False, native=False)
-                preprocess(cloudPath, hostPath, self.preprocessNative, fromLocal=False, native=True)
-
-            elif result == AppSyncResult.HOST_TO_CLOUD:
-                preprocess(hostPath, cloudPath, self.preprocess, fromLocal=True, native=False)
-                preprocess(hostPath, cloudPath, self.preprocessNative, fromLocal=True, native=True)
-
             print("\t{}".format(getResultStr(result)))
 
             if result == AppSyncResult.CLOUD_TO_HOST or result == AppSyncResult.HOST_TO_CLOUD:
@@ -204,6 +174,7 @@ class AppData(object):
             global g_numSyncedApps
             g_numSyncedApps += 1
 
+
 def replaceTree(src, dst):
     # check access to 'dst' before removing
     try:
@@ -214,6 +185,7 @@ def replaceTree(src, dst):
     shutil.rmtree(dst + "_")
     shutil.copytree(src, dst)
     return True
+
 
 def mainFunction(callback=None):
 
@@ -234,6 +206,7 @@ def mainFunction(callback=None):
         app.syncConfig(callback)
 
     jsonFile.close()
+
 
 if __name__ == "__main__":
     mainFunction()
