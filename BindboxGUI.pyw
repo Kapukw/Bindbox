@@ -459,6 +459,8 @@ if __name__ == '__main__':
         QtWidgets.QMessageBox.critical(None, "Bindbox", "I couldn't detect any system tray on this system.")
         sys.exit(1)
 
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+
     app = MyApp(sys.argv)
     app.setQuitOnLastWindowClosed(False)
 
