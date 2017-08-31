@@ -6,12 +6,6 @@
 		{
 			"kapukw" 	: [ "%USERPROFILE%/Documents/maya" ],
 			"HYRON" 	: [ "%USERPROFILE%/Documents/maya" ]
-		},
-		"preprocess_native":
-		{
-			"%USERPROFILE%" : [ "2014-x64/prefs/userPrefs.mel",
-								"2016/prefs/userPrefs.mel"
-			]
 		}
 	},
 	"app2": {
@@ -27,11 +21,11 @@
 		"name": "Blender",
 		"proc_names" 	: ["blender.exe", "blender-app.exe"],
 		"paths": {
-			"kapukw" 	: [ "%APPDATA%/Blender Foundation/Blender/2.77",
-							"%APPDATA%/Blender Foundation/Blender/2.78"
+			"kapukw" 	: [ "%APPDATA%/Blender Foundation/Blender/2.78",
+							"%APPDATA%/Blender Foundation/Blender/2.79"
 			],
-			"HYRON" 	: [ "%APPDATA%/Blender Foundation/Blender/2.77",
-							"%APPDATA%/Blender Foundation/Blender/2.78"
+			"HYRON" 	: [ "%APPDATA%/Blender Foundation/Blender/2.78",
+							"%APPDATA%/Blender Foundation/Blender/2.79"
 			]
 		}
 	},
@@ -54,19 +48,6 @@
 		}
 	},
 	"app6": {
-		"name": "MyPaint",
-		"proc_names" 	: [ "mypaint.exe" ],
-		"paths":
-		{
-			"kapukw" 	: [ "%LOCALAPPDATA%/mypaint" ],
-			"HYRON" 	: [ "%LOCALAPPDATA%/mypaint" ]
-		},
-		"preprocess_native":
-		{
-			"%LOCALAPPDATA%": [ "settings.json" ]
-		}
-	},
-	"app7": {
 		"name": "Just Cause 3 Saves",
 		"paths":
 		{

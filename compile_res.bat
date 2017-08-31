@@ -1,2 +1,2 @@
-C:\Python36\Scripts\pyrcc5.exe BindboxGUI.qrc -no-compress -o BindboxGUI_rc.py
+C:\Python36\Scripts\pyrcc5.exe BindboxGUI.qrc -o BindboxGUI_rc.py
 pause

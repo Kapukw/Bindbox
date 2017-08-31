@@ -94,7 +94,7 @@ class AppWindow(QtWidgets.QWidget):
                 background-color: #575757;
             }
             QWidget#backgroundWidget {
-                background-image: url(:/resources/appinfo_bg.png);
+                background-image: url(:/resources/item_bg.svg);
                 background-position: center left;
                 background-repeat: no-repeat;
             }
@@ -441,14 +441,14 @@ def myExcepthook(exctype, value, tback):
 def loadResources():
     fontDatabase = QtGui.QFontDatabase()
     fontDatabase.addApplicationFont(":/resources/Eurostile.ttf")
-    AppWindow.iconOptions = QtGui.QIcon(":/resources/options.png")
-    AppWindow.iconTray = QtGui.QIcon(':/resources/icon16.png')
+    AppWindow.iconOptions = QtGui.QIcon(":/resources/options.svg")
+    AppWindow.iconTray = QtGui.QIcon(':/resources/app_icon.svg')
 
-    TimestampWidget.errorPix = QtGui.QPixmap(":/resources/error.png")
-    TimestampWidget.successPix = QtGui.QPixmap(":/resources/success.png")
+    TimestampWidget.errorPix = QtGui.QPixmap(":/resources/error.svg")
+    TimestampWidget.successPix = QtGui.QPixmap(":/resources/success.svg")
 
-    AppInfoWidget.toHostPix = QtGui.QPixmap(":/resources/to_host.png")
-    AppInfoWidget.toCloudPix = QtGui.QPixmap(":/resources/to_cloud.png")
+    AppInfoWidget.toHostPix = QtGui.QPixmap(":/resources/to_host.svg")
+    AppInfoWidget.toCloudPix = QtGui.QPixmap(":/resources/to_cloud.svg")
 
 if __name__ == '__main__':
 
