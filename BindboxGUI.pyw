@@ -3,7 +3,7 @@ import os
 import time
 import traceback
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtSvg
 
 import Utils
 import Bindbox
@@ -16,17 +16,17 @@ g_maxMessagesCount = 30
 
 
 class TimestampWidget(QtWidgets.QWidget):
-    errorPix = None
-    successPix = None
 
     def __init__(self, timestamp, result):
         super(TimestampWidget, self).__init__()
 
-        resultLabel = QtWidgets.QLabel()
+        resultLabel = QtSvg.QSvgWidget()
         if result == 0:
-            resultLabel.setPixmap(self.successPix)
+            resultLabel.setFixedSize(QtCore.QSize(20, 16))
+            resultLabel.load(":/resources/success.svg")
         else:
-            resultLabel.setPixmap(self.errorPix)
+            resultLabel.setFixedSize(QtCore.QSize(16, 16))
+            resultLabel.load(":/resources/error.svg")
 
         timestampLabel = QtWidgets.QLabel()
         timestampLabel.setObjectName("timestampLabel")
@@ -47,8 +47,6 @@ class TimestampWidget(QtWidgets.QWidget):
 
 
 class AppInfoWidget(QtWidgets.QWidget):
-    toHostPix = None
-    toCloudPix = None
 
     def __init__(self, name, result):
         super(AppInfoWidget, self).__init__()
@@ -58,30 +56,30 @@ class AppInfoWidget(QtWidgets.QWidget):
         appNameLabel.setFont(QtGui.QFont("Eurostile", 12, QtGui.QFont.Normal))
         appNameLabel.setText(name)
 
-        appSyncResultLabel = QtWidgets.QLabel()
-        appSyncResultLabel.setObjectName("appSyncResultLabel")
-        appSyncResultLabel.setText(str(result))
+        resultSvg = QtSvg.QSvgWidget()
         if result == Bindbox.AppSyncResult.HOST_TO_CLOUD:
-            appSyncResultLabel.setPixmap(self.toCloudPix)
+            resultSvg.setFixedSize(QtCore.QSize(30, 16))
+            resultSvg.load(":/resources/to_cloud.svg")
         elif result == Bindbox.AppSyncResult.CLOUD_TO_HOST:
-            appSyncResultLabel.setPixmap(self.toHostPix)
+            resultSvg.setFixedSize(QtCore.QSize(33, 16))
+            resultSvg.load(":/resources/to_host.svg")
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(appNameLabel)
         layout.addStretch()
-        layout.addWidget(appSyncResultLabel)
-        layout.setContentsMargins(15, 0, 20, 0)
+        layout.addWidget(resultSvg)
+        layout.setContentsMargins(15, 0, 16, 0)
         layout.setSpacing(0)
 
-        backgroundWidget = QtWidgets.QWidget()
-        backgroundWidget.setObjectName("backgroundWidget")
-        backgroundWidget.setFixedSize(320, 38)
+        backgroundWidget = QtSvg.QSvgWidget()
+        backgroundWidget.setFixedSize(316, 32)
+        backgroundWidget.load(":/resources/item_bg.svg")
         backgroundWidget.setLayout(layout)
 
         backgroundLayout = QtWidgets.QHBoxLayout()
         backgroundLayout.addWidget(backgroundWidget)
         backgroundLayout.setAlignment(QtCore.Qt.AlignLeft)
-        backgroundLayout.setContentsMargins(28, 0, 0, 0)
+        backgroundLayout.setContentsMargins(28, 3, 0, 3)
         self.setLayout(backgroundLayout)
 
 
@@ -92,11 +90,6 @@ class AppWindow(QtWidgets.QWidget):
             }
             QWidget#lineWidget {
                 background-color: #575757;
-            }
-            QWidget#backgroundWidget {
-                background-image: url(:/resources/item_bg.svg);
-                background-position: center left;
-                background-repeat: no-repeat;
             }
             QPushButton#openConfigButton {
                 background: none;
@@ -119,7 +112,6 @@ class AppWindow(QtWidgets.QWidget):
                 border: none;
                 outline: none;
             }
-
             QListWidget::item#listWidget,
             QListWidget::item:selected#listWidget,
             QListWidget::item:selected:active#listWidget,
@@ -128,7 +120,6 @@ class AppWindow(QtWidgets.QWidget):
                 background: none;
                 border: none;
             }
-
             QScrollBar:vertical {
                 background: #444444;
                 border: none;
@@ -171,11 +162,10 @@ class AppWindow(QtWidgets.QWidget):
             }
             """
 
-    iconOptions = None
-    iconTray = None
-
     def __init__(self):
         super(AppWindow, self).__init__()
+
+        QtGui.QFontDatabase().addApplicationFont(":/resources/Eurostile.ttf")
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -209,18 +199,30 @@ class AppWindow(QtWidgets.QWidget):
         self.trayIcon = QtWidgets.QSystemTrayIcon(self)
         self.trayIcon.setContextMenu(trayIconMenu)
         self.trayIcon.setToolTip("Bindbox")
-        self.trayIcon.setIcon(self.iconTray)
+        self.trayIcon.setIcon(QtGui.QIcon(":/resources/app_icon.svg"))
         self.trayIcon.activated.connect(self.iconActivated)
         self.trayIcon.show()
 
     def createTopWidget(self):
-
         self.openConfigButton = QtWidgets.QPushButton()
         self.openConfigButton.setObjectName("openConfigButton")
         self.openConfigButton.setFixedSize(QtCore.QSize(32, 32))
-        self.openConfigButton.setIcon(self.iconOptions)
-        self.openConfigButton.setIconSize(QtCore.QSize(32, 32))
         self.openConfigButton.clicked.connect(self.openConfig)
+
+        # SVG icons are buggy
+        #self.openConfigButton.setIcon(QtGui.QIcon(":/resources/options.svg"))
+        #self.openConfigButton.setIconSize(QtCore.QSize(32, 32))
+
+        svgIcon = QtSvg.QSvgWidget()
+        svgIcon.setFixedSize(QtCore.QSize(32, 32))
+        svgIcon.load(":/resources/options.svg")
+
+        buttonLayout = QtWidgets.QHBoxLayout()
+        buttonLayout.setContentsMargins(0, 0, 0, 0)
+        buttonLayout.setSpacing(0)
+        buttonLayout.addWidget(svgIcon)
+        self.openConfigButton.setLayout(buttonLayout)
+
         layout = QtWidgets.QHBoxLayout()
         layout.addStretch()
         layout.addWidget(self.openConfigButton)
@@ -303,11 +305,14 @@ class AppWindow(QtWidgets.QWidget):
     def stopAllTasks(self):
 
         while self.workThread.isWorking:
-            print("Wait sync ending...")
+            print("Wait for sync ending...")
             time.sleep(1)
 
-        print("Terminate sync thread")
         self.workThread.terminate()
+        print("Sync thread stopped.")
+
+        self.trayIcon.hide()
+        print("App closed.")
 
     def setVisible(self, b):
         if b:
@@ -438,18 +443,6 @@ def myExcepthook(exctype, value, tback):
     QtWidgets.QMessageBox.critical(None, "Hook: Unexpected Error", traceback.format_exc())
     sys.__excepthook__(exctype, value, tback)
 
-def loadResources():
-    fontDatabase = QtGui.QFontDatabase()
-    fontDatabase.addApplicationFont(":/resources/Eurostile.ttf")
-    AppWindow.iconOptions = QtGui.QIcon(":/resources/options.svg")
-    AppWindow.iconTray = QtGui.QIcon(':/resources/app_icon.svg')
-
-    TimestampWidget.errorPix = QtGui.QPixmap(":/resources/error.svg")
-    TimestampWidget.successPix = QtGui.QPixmap(":/resources/success.svg")
-
-    AppInfoWidget.toHostPix = QtGui.QPixmap(":/resources/to_host.svg")
-    AppInfoWidget.toCloudPix = QtGui.QPixmap(":/resources/to_cloud.svg")
-
 if __name__ == '__main__':
 
     Utils.winGuiHook()
@@ -459,12 +452,11 @@ if __name__ == '__main__':
         QtWidgets.QMessageBox.critical(None, "Bindbox", "I couldn't detect any system tray on this system.")
         sys.exit(1)
 
-    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+    QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
 
     app = MyApp(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-
-    loadResources()
 
     # TODO: handle little time before first sync
 
