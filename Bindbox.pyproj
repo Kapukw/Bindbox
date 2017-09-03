@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="Bindbox.py" />
     <Compile Include="BindboxGUI.pyw" />
+    <Compile Include="BindboxGUI_rc.py" />
     <Compile Include="make_bins.py" />
     <Compile Include="Utils.py">
       <SubType>Code</SubType>
