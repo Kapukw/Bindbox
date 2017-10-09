@@ -46,19 +46,16 @@ def getCurrentProcesses():
     return procNames
 
 
-def getFolderModificationTime(dirPath):
-
-    mtime = os.stat(dirPath).st_mtime
-
+def getFolderModTime(dirPath):
+    modTime = os.stat(dirPath).st_mtime
     for entry in os.listdir(dirPath):
         childPath = os.path.join(dirPath, entry)
         childMode = os.stat(childPath).st_mode
         if stat.S_ISDIR(childMode):
-            mtime = max(mtime, getFolderModificationTime(childPath))
+            modTime = max(modTime, getFolderModTime(childPath))
         elif stat.S_ISREG(childMode):
-            mtime = max(mtime, os.stat(childPath).st_mtime)
-
-    return mtime
+            modTime = max(modTime, os.stat(childPath).st_mtime)
+    return modTime
 
 
 def replaceTree(src, dst):
@@ -84,17 +81,6 @@ class AppSyncResult(object):
     HOST_TO_CLOUD = 3
 
 
-def getSyncPaths(jsonDict):
-    if 'paths' not in jsonDict:
-        return []
-    currentHostName = getHostName()
-    for hostName in jsonDict['paths']:
-        if str(currentHostName).lower() == str(hostName).lower():
-            return jsonDict['paths'][hostName]
-    return []
-
-
-# Sync all files and subfolders.
 def syncEntireFolder(hostPath, cloudPath):
 
     syncResult = AppSyncResult.NOT_SYNCED
@@ -104,8 +90,8 @@ def syncEntireFolder(hostPath, cloudPath):
 
     if isHostExists and isCloudExists:
 
-        hostModTime = int(getFolderModificationTime(hostPath))
-        cloudModTime = int(getFolderModificationTime(cloudPath))
+        hostModTime = int(getFolderModTime(hostPath))
+        cloudModTime = int(getFolderModTime(cloudPath))
 
         print("\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(hostPath, cloudPath, time.ctime(hostModTime), time.ctime(cloudModTime)))
 
@@ -142,10 +128,99 @@ def syncEntireFolder(hostPath, cloudPath):
     return syncResult
 
 
+def getFilelistByExts(searchDir, fileExts):
+    if not os.path.exists(searchDir):
+        return []
+    matchedNames = []
+    for entryName in os.listdir(searchDir):
+        entryName = entryName.lower()
+        for ext in fileExts:
+            if entryName.endswith(ext.lower()):
+                matchedNames.append(entryName)
+    filePaths = []
+    for entryName in matchedNames:
+        path = os.path.join(searchDir, entryName)
+        if stat.S_ISREG(os.stat(path).st_mode):
+            filePaths.append(path)
+    return filePaths
+
+
+def getFilelistModTime(filePaths):
+    modTime = 0
+    for path in filePaths:
+        modTime = max(modTime, os.stat(path).st_mtime)
+    return modTime
+
+
+def removeFilelist(filePaths):
+    for path in filePaths:
+        os.remove(path)
+
+
+def copyFilelist(filePaths, targetDir):
+    if not os.path.exists(targetDir):
+        os.makedirs(targetDir)
+    for path in filePaths:
+        shutil.copy2(path, targetDir)
+
+
 # Sync all files by wildcard. Subfolders not included.
 # All matched 'dest' files will be deleted and then replaced by 'source' files.
-def syncByFileMask(fileMask, sourcePath, destPath):
-    pass
+def syncByExts(fileExts, hostPath, cloudPath):
+
+    syncResult = AppSyncResult.NOT_SYNCED
+
+    hostFiles = getFilelistByExts(hostPath, fileExts)
+    cloudFiles = getFilelistByExts(cloudPath, fileExts)
+    isHostExists = True if hostFiles != [] else False
+    isCloudExists = True if cloudFiles != [] else False
+
+    if isHostExists and isCloudExists:
+
+        hostModTime = int(getFilelistModTime(hostFiles))
+        cloudModTime = int(getFilelistModTime(cloudFiles))
+
+        print("\thost: {}\n\tcloud: {}\n\thost modified: {}\n\tcloud modified: {}".format(hostPath, cloudPath, time.ctime(hostModTime), time.ctime(cloudModTime)))
+
+        if hostModTime > cloudModTime:
+            removeFilelist(cloudFiles)
+            copyFilelist(hostFiles, cloudPath)
+            syncResult = AppSyncResult.HOST_TO_CLOUD
+
+        elif hostModTime < cloudModTime:
+            removeFilelist(hostFiles)
+            copyFilelist(cloudFiles, hostPath)
+            syncResult = AppSyncResult.CLOUD_TO_HOST
+
+        else:
+            syncResult = AppSyncResult.EQUAL
+
+    elif isHostExists and not isCloudExists:
+        copyFilelist(hostFiles, cloudPath)
+        syncResult = AppSyncResult.HOST_TO_CLOUD
+
+    elif not isHostExists and isCloudExists:
+        copyFilelist(cloudFiles, hostPath)
+        syncResult = AppSyncResult.CLOUD_TO_HOST
+
+    resultStrings = { AppSyncResult.NOT_SYNCED    : "not synced",
+                      AppSyncResult.EQUAL         : "host == cloud",
+                      AppSyncResult.CLOUD_TO_HOST : "host <- cloud",
+                      AppSyncResult.HOST_TO_CLOUD : "host -> cloud" }
+
+    print("\t{}".format(resultStrings[syncResult]))
+
+    return syncResult
+
+
+def getSyncPaths(jsonDict):
+    if 'paths' not in jsonDict:
+        return []
+    currentHostName = getHostName()
+    for hostName in jsonDict['paths']:
+        if str(currentHostName).lower() == str(hostName).lower():
+            return jsonDict['paths'][hostName]
+    return []
 
 
 class AppData(object):
@@ -153,6 +228,7 @@ class AppData(object):
     def __init__(self, jsonDict):
         self.name = jsonDict['name']
         self.procNames = jsonDict['proc_names'] if 'proc_names' in jsonDict else []
+        self.fileExts = jsonDict['extensions'] if 'extensions' in jsonDict else []
         self.paths = getSyncPaths(jsonDict)
 
     def syncConfig(self, callback=None):
@@ -171,12 +247,15 @@ class AppData(object):
             hostPath = os.path.normpath(os.path.expandvars(self.paths[i]))
             cloudPath = os.path.normpath(os.path.join(getCloudPath(), self.name, str(i), ""))
 
-            result = syncEntireFolder(hostPath, cloudPath)
+            if self.fileExts == []:
+                syncResult = syncEntireFolder(hostPath, cloudPath)
+            else:
+                syncResult = syncByExts(self.fileExts, hostPath, cloudPath)
 
-            if result == AppSyncResult.CLOUD_TO_HOST or result == AppSyncResult.HOST_TO_CLOUD:
+            if syncResult in (AppSyncResult.CLOUD_TO_HOST, AppSyncResult.HOST_TO_CLOUD):
                 syncHappened = True
                 if callback is not None:
-                    callback(self.name, result)
+                    callback(self.name, syncResult)
 
         if syncHappened:
             global g_numSyncedApps
