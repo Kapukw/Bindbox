@@ -183,6 +183,8 @@ class AppWindow(QtWidgets.QWidget):
         self.setWindowTitle("Bindbox")
         self.setWindowFlags(QtCore.Qt.Popup)
 
+        self.appWindowVisible = False
+
         self.startupTime = time.time()
         self.lastBeginSyncTime = self.startupTime
         self.lastEndSyncTime = self.startupTime
@@ -190,8 +192,8 @@ class AppWindow(QtWidgets.QWidget):
         self.startupScript()
 
     def createTrayIcon(self):
-        showAction = QtWidgets.QAction("&Show", self, triggered=self.show)
-        quitAction = QtWidgets.QAction("&Quit", self, triggered=QtCore.QCoreApplication.instance().quit)
+        showAction = QtWidgets.QAction("&Show", self, triggered=self.showAppWindow)
+        quitAction = QtWidgets.QAction("&Quit", self, triggered=self.quitApp)
         trayIconMenu = QtWidgets.QMenu(self)
         trayIconMenu.addAction(showAction)
         trayIconMenu.addSeparator()
@@ -203,11 +205,21 @@ class AppWindow(QtWidgets.QWidget):
         self.trayIcon.activated.connect(self.iconActivated)
         self.trayIcon.show()
 
+    def quitApp(self):
+        QtCore.QCoreApplication.instance().quit()
+
+    def showAppWindow(self):
+        self.appWindowVisible = True
+        self.show()
+
+    def openAppConfig(self):
+        os.startfile(Bindbox.getConfigPath())
+
     def createTopWidget(self):
         self.openConfigButton = QtWidgets.QPushButton()
         self.openConfigButton.setObjectName("openConfigButton")
         self.openConfigButton.setFixedSize(QtCore.QSize(32, 32))
-        self.openConfigButton.clicked.connect(self.openConfig)
+        self.openConfigButton.clicked.connect(self.openAppConfig)
 
         # SVG icons are buggy
         #self.openConfigButton.setIcon(QtGui.QIcon(":/resources/options.svg"))
@@ -298,9 +310,6 @@ class AppWindow(QtWidgets.QWidget):
         else:
             self.timeToSyncLabel.setText("...")
 
-    def openConfig(self):
-        os.startfile(Bindbox.getConfigPath())
-
     @Utils.pyqtSlotWithExceptions()
     def stopAllTasks(self):
 
@@ -314,38 +323,27 @@ class AppWindow(QtWidgets.QWidget):
         self.trayIcon.hide()
         print("App closed.")
 
-    def setVisible(self, b):
-        if b:
-
-            offset_x = 16
-            offset_y = 16
-
+    def setVisible(self, visible):
+        if visible:
+            appWidth = self.width()
+            appHeigth = self.height()
+            rightOffset = 16
+            bottomOffset = 16
             availableGeometry = QtWidgets.QApplication.desktop().availableGeometry()
-
-            max_x = availableGeometry.width() - self.width() - offset_x
-            app_x = self.trayIcon.geometry().center().x() - self.width()/2
-
-            if app_x > max_x:
-                app_x = max_x
-
-            app_y = availableGeometry.bottom() - self.height() - offset_y
-
-            app_pos = QtCore.QPoint(app_x, app_y)
-            self.setGeometry(QtCore.QRect(app_pos, self.size()))
-
-        return super(AppWindow, self).setVisible(b)
-
-    def closeEvent(self, event):
-        if self.trayIcon.isVisible():
-            self.hide()
-            event.ignore()
+            appX = self.trayIcon.geometry().center().x() - appWidth/2
+            appX = min(appX, availableGeometry.width() - appWidth - rightOffset)
+            appY = availableGeometry.bottom() - appHeigth - bottomOffset
+            self.setGeometry(appX, appY, appWidth, appHeigth)
+        super(AppWindow, self).setVisible(visible)
 
     def iconActivated(self, reason):
-        if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick) and not self.isVisible():
-            self.show()
-
-    def showTrayMessage(self):
-        self.trayIcon.showMessage("Title", "Text", self.iconIdle)
+        if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick):
+            if self.appWindowVisible:
+                self.appWindowVisible = False
+                self.hide()
+            else:
+                self.appWindowVisible = True
+                self.show()
 
     def addListWidgetItem(self, widget):
         itemsCount = self.listWidget.count()
