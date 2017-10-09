@@ -4,7 +4,7 @@ from cx_Freeze import setup, Executable
 options = {
     'build_exe': {
         'optimize': 2,
-        'include_msvcr': True,
+        'include_msvcr': False,
         'zip_include_packages': ['*'],
         'zip_exclude_packages': [],
     }

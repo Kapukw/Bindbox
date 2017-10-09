@@ -183,8 +183,6 @@ class AppWindow(QtWidgets.QWidget):
         self.setWindowTitle("Bindbox")
         self.setWindowFlags(QtCore.Qt.Popup)
 
-        self.appWindowVisible = False
-
         self.startupTime = time.time()
         self.lastBeginSyncTime = self.startupTime
         self.lastEndSyncTime = self.startupTime
@@ -192,7 +190,7 @@ class AppWindow(QtWidgets.QWidget):
         self.startupScript()
 
     def createTrayIcon(self):
-        showAction = QtWidgets.QAction("&Show", self, triggered=self.showAppWindow)
+        showAction = QtWidgets.QAction("&Show", self, triggered=self.show)
         quitAction = QtWidgets.QAction("&Quit", self, triggered=self.quitApp)
         trayIconMenu = QtWidgets.QMenu(self)
         trayIconMenu.addAction(showAction)
@@ -207,10 +205,6 @@ class AppWindow(QtWidgets.QWidget):
 
     def quitApp(self):
         QtCore.QCoreApplication.instance().quit()
-
-    def showAppWindow(self):
-        self.appWindowVisible = True
-        self.show()
 
     def openAppConfig(self):
         os.startfile(Bindbox.getConfigPath())
@@ -338,12 +332,7 @@ class AppWindow(QtWidgets.QWidget):
 
     def iconActivated(self, reason):
         if reason in (QtWidgets.QSystemTrayIcon.Trigger, QtWidgets.QSystemTrayIcon.DoubleClick):
-            if self.appWindowVisible:
-                self.appWindowVisible = False
-                self.hide()
-            else:
-                self.appWindowVisible = True
-                self.show()
+            self.setVisible(not self.isVisible())
 
     def addListWidgetItem(self, widget):
         itemsCount = self.listWidget.count()
